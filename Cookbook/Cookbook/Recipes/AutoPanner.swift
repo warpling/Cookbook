@@ -41,16 +41,39 @@ class AutoPannerConductor: ObservableObject, ProcessesPlayerInput {
         }
     }
 
+    var testPlayCount = 1
+    
     func start() {
+        print("Start engine")
         playerPlot.start()
         pannerPlot.start()
         mixPlot.start()
 
         do { try engine.start() } catch let err { Log(err) }
-        player.scheduleBuffer(buffer, at: nil, options: .loops)
+        
+        // Ryan's test
+        let url = Bundle.main.url(forResource: "Sounds/closed_hi_hat_F#1", withExtension: "wav")!
+        try! player.load(url: url, buffered: false)
+        
+        player.completionHandler = {
+            DispatchQueue.main.async {
+                print("Player end: \(self.testPlayCount)")
+                self.testPlayCount += 1
+            }
+        }
+        player.play()
+        print("Player start: \(self.testPlayCount)")
+        
+        Timer.scheduledTimer(withTimeInterval: 2, repeats: false) { (_) in
+            self.stop()
+            Timer.scheduledTimer(withTimeInterval: 1, repeats: false) { (_) in
+                self.start()
+            }
+        }
     }
 
     func stop() {
+        print("Stop engine")
         engine.stop()
     }
 }
@@ -60,23 +83,10 @@ struct AutoPannerView: View {
 
     var body: some View {
         ScrollView {
-            PlayerControls(conductor: conductor)
-            ParameterSlider(text: "Frequency",
-                            parameter: self.$conductor.data.frequency,
-                            range: 0.0...10.0,
-                            units: "Hertz")
-            ParameterSlider(text: "Depth",
-                            parameter: self.$conductor.data.depth,
-                            range: 0.0...1.0,
-                            units: "Percent")
-            ParameterSlider(text: "Mix",
-                            parameter: self.$conductor.data.balance,
-                            range: 0...1,
-                            units: "%")
-            DryWetMixPlotsView(dry: conductor.playerPlot, wet: conductor.pannerPlot, mix: conductor.mixPlot)
+//            PlayerControls(conductor: conductor)
         }
         .padding()
-        .navigationBarTitle(Text("Auto Panner"))
+        .navigationBarTitle(Text("Ryan's Test"))
         .onAppear {
             self.conductor.start()
         }
